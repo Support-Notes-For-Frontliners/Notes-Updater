@@ -24,7 +24,7 @@ exports.countnotes = functions.database
   .ref("/formData/{note}")
   .onCreate(async (snap, context) => {
     const collectionRef = snap.ref.parent;
-    const countRef = collectionRef.parent.child("notes_count");
+    const countRef = collectionRef.parent.child("stats").child("notes_count");
 
     let increment;
     // if (change.after.exists() && !change.before.exists()) {
@@ -51,7 +51,9 @@ exports.recountnotes = functions.database
   .onDelete(async (snap) => {
     console.log(snap.ref);
     const noteRef = snap.ref;
-    const counterRef = noteRef.parent.parent.child("notes_count");
+    const counterRef = noteRef.parent.parent
+      .child("stats")
+      .child("notes_count");
     const formDataRef = noteRef.parent;
     // Return the promise from counterRef.set() so our function
     // waits for this async event to complete before it exits.
@@ -60,10 +62,10 @@ exports.recountnotes = functions.database
   });
 
 exports.readdnotes = functions.database
-  .ref("/notes_count")
+  .ref("/stats/notes_count")
   .onDelete(async (snap) => {
     const counterRef = snap.ref;
-    const formDataRef = counterRef.parent.child("formData");
+    const formDataRef = counterRef.parent.parent.child("formData");
     // Return the promise from counterRef.set() so our function
     // waits for this async event to complete before it exits.
     const messagesData = await formDataRef.once("value");
