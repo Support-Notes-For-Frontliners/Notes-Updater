@@ -49,7 +49,6 @@ exports.countnotes = functions.database
 exports.recountnotes = functions.database
   .ref("/formData/{note}")
   .onDelete(async (snap) => {
-    console.log(snap.ref);
     const noteRef = snap.ref;
     const counterRef = noteRef.parent.parent
       .child("stats")
@@ -93,15 +92,13 @@ exports.sentWrite = functions.database
   .ref("/formData/{note}/sent")
   .onWrite(async (change) => {
     const latestRef = change.after.ref;
-    const oldRef = change.before.ref;
     const sentCountRef = latestRef.parent.parent.parent
       .child("stats")
       .child("sent_count");
     const latestSentVal = change.after.val();
     const oldSentVal = change.before.val();
     await sentCountRef.transaction((current) => {
-      console.log(current);
-      console.log(latestSentVal, oldSentVal);
+      console.log("Sent counter recount");
       return (current || 0) + ((latestSentVal ? 1 : 0) - (oldSentVal ? 1 : 0));
     });
 
@@ -113,8 +110,9 @@ exports.sentReCount = functions.database
   .onDelete(async (snap) => {
     const sentRef = snap.ref;
     const formRef = snap.ref.parent.parent.child("formData");
-    const sentNotes = formRef.orderByChild("{note}/sent").equalTo(true);
-    const sentNoteCount = await sentNotes.once("value");
-    console.log("Sent Counter recount");
-    return await sentRef.set(sentNoteCount.numChildren());
+    const sentNotes = await formRef.orderByChild("sent").equalTo(true);
+    sentNotes.on("value", async (vals) => {
+      console.log("Sent Counter recount");
+      return await sentRef.set(vals.numChildren());
+    });
   });
